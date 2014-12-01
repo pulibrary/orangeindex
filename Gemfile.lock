@@ -1,3 +1,9 @@
+GIT
+  remote: git@github.com:pulibrary/lcsort.git
+  revision: b5a1a52e47abc11882aa503b573156bf935364a7
+  specs:
+    lcsort (0.1.0)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -23,6 +29,7 @@ GEM
       rspec-support (~> 3.0.0)
     rspec-support (3.0.2)
     slop (3.6.0)
+    stringex (2.5.2)
     traject (1.1.0)
       dot-properties (>= 0.1.1)
       hashie (>= 2.0.5, < 2.1)
@@ -37,5 +44,7 @@ PLATFORMS
   java
 
 DEPENDENCIES
+  lcsort!
   rspec (~> 3.0.0)
+  stringex
   traject (= 1.1.0)
