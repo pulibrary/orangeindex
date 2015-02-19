@@ -1,8 +1,15 @@
 GIT
   remote: git://github.com/pulibrary/lcsort.git
-  revision: 3cd579a872bd2758fc3f95616d98b769508bbbfe
+  revision: c5602b7665b981b494d09594cca0f0c7cac851a1
   specs:
-    lcsort (0.1.0)
+    lcsort (0.1.1)
+
+GIT
+  remote: git://github.com/pulibrary/stringex.git
+  revision: 357f70511532a35b11a240e5ae06d02725cb8d0a
+  tag: vpton.2.5.2.2
+  specs:
+    stringex (2.5.2)
 
 GEM
   remote: https://rubygems.org/
@@ -31,7 +38,6 @@ GEM
     rspec-support (3.0.4)
     scrub_rb (1.0.1)
     slop (3.6.0)
-    stringex (2.5.2)
     traject (1.1.0)
       dot-properties (>= 0.1.1)
       hashie (>= 2.0.5, < 2.1)
@@ -48,5 +54,5 @@ PLATFORMS
 DEPENDENCIES
   lcsort!
   rspec (~> 3.0.0)
-  stringex
+  stringex!
   traject (= 1.1.0)

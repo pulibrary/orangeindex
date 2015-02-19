@@ -6,7 +6,7 @@ gem 'traject', '1.1.0'
 
 gem 'lcsort', :git => "git://github.com/pulibrary/lcsort.git"
 
-gem 'stringex'
+gem 'stringex', :git => "git://github.com/pulibrary/stringex.git", :tag => 'vpton.2.5.2.2'
 
 group :development do
 	# rspec
