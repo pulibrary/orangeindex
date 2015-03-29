@@ -12,6 +12,8 @@ gem 'rspec-solr'
 
 gem 'rsolr'
 
+gem 'faraday'
+
 group :development do
 	# rspec
 	gem 'rspec', '~> 2.9'
