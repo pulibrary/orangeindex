@@ -13,27 +13,28 @@ conn = Faraday.new(:url => config['marc_liberation']) do |faraday|
 end
 
 
-desc "Index against SET_URL, default traject config solr.url"
+desc "Index MARC against SET_URL, default sample fixtures against traject config solr.url"
 task :index do
   url_arg = ENV['SET_URL'] ? "-u #{ENV['SET_URL']}" : ''
-  sh "traject -c lib/traject_config.rb spec/fixtures/sampleconc.mrx #{url_arg}"
+  fixtures = ENV['MARC'] || 'spec/fixtures/sampleconc.mrx'
+  sh "traject -c lib/traject_config.rb #{fixtures} #{url_arg}"
 end
 
 namespace :index do
 
-  desc "Index sample fixtures in development"
+  desc "Index MARC in development"
   task :development do
     ENV['SET_URL'] = config['development']['url']
     Rake::Task["index"].invoke
   end  
 
-  desc "Index sample fixtures in production"
+  desc "Index MARC in production"
   task :production do
     ENV['SET_URL'] = config['production']['url']
     Rake::Task["index"].invoke
   end  
 
-  desc "Index sample fixtures in test"
+  desc "Index MARC in test"
   task :test do
     ENV['SET_URL'] = config['test']['url']
     Rake::Task["index"].invoke    
@@ -105,6 +106,35 @@ namespace :liberate do
     end
   end
 
+  desc "Index VoyRec with today's changed records, against SET_URL"
+  task :latest do
+    url_arg = ENV['SET_URL'] ? "-u #{ENV['SET_URL']}" : '' 
+    resp = conn.get '/events.json'
+    event = JSON.parse(resp.body).last
+    if event['success'] && event['dump_type'] == 'CHANGED_RECORDS'
+      dump = JSON.parse(Faraday.get(event['dump_url']).body)
+      if dump['files']['updated_records'][0]     
+        File.write('/tmp/update.gz', Faraday.get(dump['files']['updated_records'][0]['dump_file']).body)      
+        Zlib::GzipReader.open('/tmp/update.gz') do |gz|
+          File.open("/tmp/update.xml", "w") do |g|
+            IO.copy_stream(gz, g)
+          end
+        end 
+        sh "traject -c lib/traject_config.rb /tmp/update.xml #{url_arg}"
+      end
+      if dump['files']['new_records'][0]     
+        File.write('/tmp/new.gz', Faraday.get(dump['files']['new_records'][0]['dump_file']).body)      
+        Zlib::GzipReader.open('/tmp/new.gz') do |gz|
+          File.open("/tmp/new.xml", "w") do |g|
+            IO.copy_stream(gz, g)
+          end
+        end 
+        sh "traject -c lib/traject_config.rb /tmp/new.xml #{url_arg}"
+      end        
+      #File.write('/tmp/new.json', Faraday.get(dump['files']['new_records'][0]['dump_file']).body) if dump['files']['new_records'][0]        
+    end
+  end
+
    namespace :updates do
 
     desc "Index VoyRec with all changed records in development"
@@ -124,6 +154,26 @@ namespace :liberate do
       Rake::Task["liberate:updates"].invoke
     end    
   end 
+
+   namespace :latest do
+
+    desc "Index VoyRec with latest day's changed records in development"
+    task :development do
+      ENV['SET_URL'] = config['development']['url']
+      Rake::Task["liberate:latest"].invoke
+    end
+    desc "Index VoyRec with latest day's changed records in production"
+    task :production do
+      ENV['SET_URL'] = config['production']['url']
+      Rake::Task["liberate:latest"].invoke
+    end
+
+    desc "Index VoyRec with latest day's changed records in test"
+    task :test do
+      ENV['SET_URL'] = config['test']['url']
+      Rake::Task["liberate:latest"].invoke
+    end    
+  end   
 
 end
 
