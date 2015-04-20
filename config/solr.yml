@@ -3,5 +3,5 @@ development:
 test:
   url: <%= "http://127.0.0.1:#{ENV['TEST_JETTY_PORT'] || 8888}/solr/blacklight-core" %>
 production:
-  url: <%= ENV['SOLR_URL'] || "http://lib-solr1.princeton.edu:8984/solr/orangelight_shard1_replica2" %>
+  url: <%= ENV['SOLR_URL'] || "http://lib-solr1.princeton.edu:8000/solr/orangelight" %>
 marc_liberation: "http://bibdata.princeton.edu"

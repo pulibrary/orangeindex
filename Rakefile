@@ -3,6 +3,7 @@ require 'erb'
 require 'json'
 require 'faraday'
 require 'zlib'
+require 'rsolr'
 
 config = YAML.load(ERB.new(File.read('config/solr.yml')).result)
 
@@ -18,6 +19,11 @@ task :index do
   url_arg = ENV['SET_URL'] ? "-u #{ENV['SET_URL']}" : ''
   fixtures = ENV['MARC'] || 'spec/fixtures/sampleconc.mrx'
   sh "traject -c lib/traject_config.rb #{fixtures} #{url_arg}"
+end
+
+desc "Index MARC_PATH files against production"
+task :index_folder do
+ Dir["#{ENV['MARC_PATH']}/*.xml"].sort.each {|fixtures| sh "rake index:production MARC=#{fixtures}; true"}
 end
 
 namespace :index do
@@ -41,6 +47,29 @@ namespace :index do
   end    
 
 end
+
+desc "which chunks from BIB_DUMP didn't index against SET_URL?"
+task :check do
+  if ENV['BIB_DUMP']
+    index_url = ENV['SET_URL'] || config['production']['url']
+    solr = RSolr.connect :url => index_url
+    `awk 'NR % 50000 == 0 {print} END {print}' #{ENV['BIB_DUMP']}`.split("\n").each_with_index do |bib, i|
+      puts i if solr.get('get', :params => {id: "#{bib}"})["doc"].nil?
+    end
+  end
+end
+
+desc "which chunks from BIB_DUMP index against SET_URL?"
+task :check_included do
+  if ENV['BIB_DUMP']
+    index_url = ENV['SET_URL'] || config['production']['url']
+    solr = RSolr.connect :url => index_url
+    `awk 'NR % 50000 == 0 {print} END {print}' #{ENV['BIB_DUMP']}`.split("\n").each_with_index do |bib, i|
+      puts i unless solr.get('get', :params => {id: "#{bib}"})["doc"].nil?
+    end
+  end
+end
+
 
 namespace :liberate do
 
