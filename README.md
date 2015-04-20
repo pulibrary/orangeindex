@@ -5,5 +5,5 @@ Index configuration for orangelight.
 Run tests with `rspec`
 
 Versions:
-* JRuby 1.7.16.1
-* Traject 1.1.0
+* JRuby 1.7.19
+* Traject 2.0.2
