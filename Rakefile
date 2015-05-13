@@ -4,6 +4,8 @@ require 'json'
 require 'faraday'
 require 'zlib'
 require 'rsolr'
+require 'time'
+require './lib/index_functions'
 
 config = YAML.load(ERB.new(File.read('config/solr.yml')).result)
 
@@ -105,35 +107,72 @@ namespace :liberate do
     end    
   end
 
-  desc "Index VoyRec with all changed records, against SET_URL"
+  desc "Index VoyRec with all changed records since SET_DATE, against SET_URL"
   task :updates do
-    url_arg = ENV['SET_URL'] ? "-u #{ENV['SET_URL']}" : '' 
+    solr_url = ENV['SET_URL'] || config['development']['url']  
     resp = conn.get '/events.json'
-    all_events = JSON.parse(resp.body).each do |event| 
-      if event['success'] && event['dump_type'] == 'CHANGED_RECORDS' && event['id'] != 17
-        dump = JSON.parse(Faraday.get(event['dump_url']).body)
-        if dump['files']['updated_records'][0]     
-          File.write('/tmp/update.gz', Faraday.get(dump['files']['updated_records'][0]['dump_file']).body)      
-          Zlib::GzipReader.open('/tmp/update.gz') do |gz|
-            File.open("/tmp/update.xml", "w") do |g|
-              IO.copy_stream(gz, g)
-            end
-          end 
-          sh "traject -c lib/traject_config.rb /tmp/update.xml #{url_arg}"
-        end
-        if dump['files']['new_records'][0]     
-          File.write('/tmp/new.gz', Faraday.get(dump['files']['new_records'][0]['dump_file']).body)      
-          Zlib::GzipReader.open('/tmp/new.gz') do |gz|
-            File.open("/tmp/new.xml", "w") do |g|
-              IO.copy_stream(gz, g)
-            end
-          end 
-          sh "traject -c lib/traject_config.rb /tmp/new.xml #{url_arg}"
-        end        
-        #File.write('/tmp/new.json', Faraday.get(dump['files']['new_records'][0]['dump_file']).body) if dump['files']['new_records'][0]        
-      end
+    comp_date = ENV['SET_DATE'] ? Date.parse(ENV['SET_DATE']) : (Date.today-1)
+    all_events = JSON.parse(resp.body).select {|e| Date.parse(e['start']) >= comp_date && e['success'] && e['dump_type'] == 'CHANGED_RECORDS'}.each do |event| 
+      IndexFunctions::update_records(event, solr_url)
+      sh "traject -c lib/traject_config.rb /tmp/update.xml -u #{solr_url}; true "
+      sh "traject -c lib/traject_config.rb /tmp/new.xml -u #{solr_url}; true"
+      sh "curl '#{solr_url}/update/json?commit=true' --data-binary @/tmp/delete_ids.json -H 'Content-type:application/json'; true"
     end
   end
+
+  namespace :updates do
+
+    desc "Index VoyRec updates for given SET_DATE in development"
+    task :development do
+      ENV['SET_URL'] = config['development']['url']
+      Rake::Task["liberate:updates"].invoke
+    end
+    desc "Index VoyRec updates for given SET_DATE in production"
+    task :production do
+      ENV['SET_URL'] = config['production']['url']
+      Rake::Task["liberate:updates"].invoke
+    end
+
+    desc "Index VoyRec updates for given SET_DATE in test"
+    task :test do
+      ENV['SET_URL'] = config['test']['url']
+      Rake::Task["liberate:updates"].invoke
+    end    
+  end
+
+
+  desc "Index VoyRec updates on SET_DATE against SET_URL, default development"
+  task :on do
+    solr_url = ENV['SET_URL'] || config['development']['url']  
+    resp = conn.get '/events.json'
+    if event = JSON.parse(resp.body).detect {|e| Date.parse(e['start']) == Date.parse(ENV['SET_DATE']) && e['success'] && e['dump_type'] == 'CHANGED_RECORDS'}
+      IndexFunctions::update_records(event, solr_url)
+      sh "traject -c lib/traject_config.rb /tmp/update.xml -u #{solr_url}"
+      sh "traject -c lib/traject_config.rb /tmp/new.xml -u #{solr_url}"
+      sh "curl '#{solr_url}/update/json?commit=true' --data-binary @/tmp/delete_ids.json -H 'Content-type:application/json'"
+    end
+  end
+
+  namespace :on do
+
+    desc "Index VoyRec updates for given SET_DATE in development"
+    task :development do
+      ENV['SET_URL'] = config['development']['url']
+      Rake::Task["liberate:on"].invoke
+    end
+    desc "Index VoyRec updates for given SET_DATE in production"
+    task :production do
+      ENV['SET_URL'] = config['production']['url']
+      Rake::Task["liberate:on"].invoke
+    end
+
+    desc "Index VoyRec updates for given SET_DATE in test"
+    task :test do
+      ENV['SET_URL'] = config['test']['url']
+      Rake::Task["liberate:on"].invoke
+    end    
+  end
+  
 
   desc "Index VoyRec with today's changed records, against SET_URL"
   task :latest do
@@ -205,31 +244,3 @@ namespace :liberate do
   end   
 
 end
-
-
-  # desc "Copies solr config files to Jetty wrapper"
-  # task solr2jetty: :environment do
-		# cp Rails.root.join('solr_conf','solr.xml'), Rails.root.join('jetty','solr')
-		# cp Rails.root.join('solr_conf','conf','schema.xml'), Rails.root.join('jetty','solr','blacklight-core','conf')
-		# cp Rails.root.join('solr_conf','conf','solrconfig.xml'), Rails.root.join('jetty','solr','blacklight-core','conf')	
-		# cp Rails.root.join('solr_conf', 'core.properties'), Rails.root.join('jetty','solr', 'blacklight-core')
-  # end
-  
-  # desc "Drops and readds tables before seeding"
-  # task setstep: :environment do
-  # 	ENV['STEP'] = ENV['STEP'] ? ENV['STEP'] : '3'
-  # 	Rake::Task["db:migrate:redo"].invoke
-  # end
-
-
-  # desc "Reset jetty"
-  # task rejetty: :environment do
-  #   Rake::Task["jetty:stop"].invoke
-  #   Rake::Task["jetty:clean"].invoke
-  #   Rake::Task["jetty:start"].invoke        
-  # end
-  # # desc "Posts fixtures to Solr"
-  # # task solradd: :environment do
-
-  # # end
-

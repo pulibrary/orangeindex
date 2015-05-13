@@ -1,11 +1,11 @@
 GIT
-  remote: git://github.com/pulibrary/lcsort.git
+  remote: https://github.com/pulibrary/lcsort.git
   revision: c5602b7665b981b494d09594cca0f0c7cac851a1
   specs:
     lcsort (0.1.1)
 
 GIT
-  remote: git://github.com/pulibrary/stringex.git
+  remote: https://github.com/pulibrary/stringex.git
   revision: 357f70511532a35b11a240e5ae06d02725cb8d0a
   tag: vpton.2.5.2.2
   specs:
