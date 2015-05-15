@@ -176,32 +176,17 @@ namespace :liberate do
 
   desc "Index VoyRec with today's changed records, against SET_URL"
   task :latest do
-    url_arg = ENV['SET_URL'] ? "-u #{ENV['SET_URL']}" : '' 
+    solr_url = ENV['SET_URL'] || config['development']['url']  
     resp = conn.get '/events.json'
     event = JSON.parse(resp.body).last
     if event['success'] && event['dump_type'] == 'CHANGED_RECORDS'
-      dump = JSON.parse(Faraday.get(event['dump_url']).body)
-      if dump['files']['updated_records'][0]     
-        File.write('/tmp/update.gz', Faraday.get(dump['files']['updated_records'][0]['dump_file']).body)      
-        Zlib::GzipReader.open('/tmp/update.gz') do |gz|
-          File.open("/tmp/update.xml", "w") do |g|
-            IO.copy_stream(gz, g)
-          end
-        end 
-        sh "traject -c lib/traject_config.rb /tmp/update.xml #{url_arg}"
-      end
-      if dump['files']['new_records'][0]     
-        File.write('/tmp/new.gz', Faraday.get(dump['files']['new_records'][0]['dump_file']).body)      
-        Zlib::GzipReader.open('/tmp/new.gz') do |gz|
-          File.open("/tmp/new.xml", "w") do |g|
-            IO.copy_stream(gz, g)
-          end
-        end 
-        sh "traject -c lib/traject_config.rb /tmp/new.xml #{url_arg}"
-      end        
-      #File.write('/tmp/new.json', Faraday.get(dump['files']['new_records'][0]['dump_file']).body) if dump['files']['new_records'][0]        
+      IndexFunctions::update_records(event, solr_url)
+      sh "traject -c lib/traject_config.rb /tmp/update.xml -u #{solr_url}"
+      sh "traject -c lib/traject_config.rb /tmp/new.xml -u #{solr_url}"
+      sh "curl '#{solr_url}/update/json?commit=true' --data-binary @/tmp/delete_ids.json -H 'Content-type:application/json'"      
     end
   end
+
 
    namespace :updates do
 
