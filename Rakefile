@@ -23,9 +23,10 @@ task :index do
   sh "traject -c lib/traject_config.rb #{fixtures} #{url_arg}"
 end
 
-desc "Index MARC_PATH files against production"
+desc "Index MARC_PATH files against SET_URL (default is production)"
 task :index_folder do
- Dir["#{ENV['MARC_PATH']}/*.xml"].sort.each {|fixtures| sh "rake index:production MARC=#{fixtures}; true"}
+  solr_url = ENV['SET_URL'] || config['production']['url']
+  Dir["#{ENV['MARC_PATH']}/*.xml"].sort.each {|fixtures| sh "rake index SET_URL=#{solr_url} MARC=#{fixtures}; true"}
 end
 
 namespace :index do
@@ -113,9 +114,9 @@ namespace :liberate do
     resp = conn.get '/events.json'
     comp_date = ENV['SET_DATE'] ? Date.parse(ENV['SET_DATE']) : (Date.today-1)
     all_events = JSON.parse(resp.body).select {|e| Date.parse(e['start']) >= comp_date && e['success'] && e['dump_type'] == 'CHANGED_RECORDS'}.each do |event| 
-      IndexFunctions::update_records(event, solr_url)
-      sh "traject -c lib/traject_config.rb /tmp/update.xml -u #{solr_url}; true "
-      sh "traject -c lib/traject_config.rb /tmp/new.xml -u #{solr_url}; true"
+      IndexFunctions::update_records(event, solr_url).each do |marc_xml|
+        sh "traject -c lib/traject_config.rb #{marc_xml} -u #{solr_url}; true"
+      end
       sh "curl '#{solr_url}/update/json?commit=true' --data-binary @/tmp/delete_ids.json -H 'Content-type:application/json'; true"
     end
   end
@@ -146,9 +147,9 @@ namespace :liberate do
     solr_url = ENV['SET_URL'] || config['development']['url']  
     resp = conn.get '/events.json'
     if event = JSON.parse(resp.body).detect {|e| Date.parse(e['start']) == Date.parse(ENV['SET_DATE']) && e['success'] && e['dump_type'] == 'CHANGED_RECORDS'}
-      IndexFunctions::update_records(event, solr_url)
-      sh "traject -c lib/traject_config.rb /tmp/update.xml -u #{solr_url}"
-      sh "traject -c lib/traject_config.rb /tmp/new.xml -u #{solr_url}"
+      IndexFunctions::update_records(event, solr_url).each do |marc_xml|
+        sh "traject -c lib/traject_config.rb #{marc_xml} -u #{solr_url}; true"
+      end
       sh "curl '#{solr_url}/update/json?commit=true' --data-binary @/tmp/delete_ids.json -H 'Content-type:application/json'"
     end
   end
@@ -180,9 +181,9 @@ namespace :liberate do
     resp = conn.get '/events.json'
     event = JSON.parse(resp.body).last
     if event['success'] && event['dump_type'] == 'CHANGED_RECORDS'
-      IndexFunctions::update_records(event, solr_url)
-      sh "traject -c lib/traject_config.rb /tmp/update.xml -u #{solr_url}"
-      sh "traject -c lib/traject_config.rb /tmp/new.xml -u #{solr_url}"
+      IndexFunctions::update_records(event, solr_url).each do |marc_xml|
+        sh "traject -c lib/traject_config.rb #{marc_xml} -u #{solr_url}; true"
+      end
       sh "curl '#{solr_url}/update/json?commit=true' --data-binary @/tmp/delete_ids.json -H 'Content-type:application/json'"      
     end
   end
