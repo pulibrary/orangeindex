@@ -27,13 +27,19 @@ RSpec.configure do |config|
 
   if ENV['TRAVIS']
     host = "localhost"
-    core = "/solr/blacklight-core"
+    core = "solr/blacklight-core"
     dtype = "edismax"
     suffix = "&defType=edismax"
     prt = 8888  
-  else 
+  elsif ENV['SOLR'] == 'production'
+    host = "lib-solr1.princeton.edu"
+    core = "solr/blacklight-core"
+    dtype = "edismax"
+    suffix = "&defType=edismax"
+    prt = 8984
+  else
     host = "localhost"
-    core = "/solr/blacklight-core"
+    core = "solr/blacklight-core"
     dtype = "edismax"
     suffix = "&defType=edismax"
     prt = 8983
@@ -41,10 +47,14 @@ RSpec.configure do |config|
 
 
 
+  config.expect_with :rspec do |c|
+    c.syntax = [:should, :expect]
+  end
+
 
 # changes for different facet queries
 
-  @@solr = RSolr.connect :url => "http://#{host}:#{prt}/#{core}", :read_timeout => 9999999  
+  @@solr = RSolr.connect :url => "http://#{host}:#{prt}/#{core}", :read_timeout => 9999999 
   #solr_config = ENV['TRAVIS'] ? YAML::load_file('config/solr.yml')["test"] : YAML::load_file('config/solr.yml')["dev"]
   #@@solr = RSolr.connect(solr_config)
   puts "Solr URL: #{@@solr.uri}"  
