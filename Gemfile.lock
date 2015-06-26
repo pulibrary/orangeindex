@@ -1,17 +1,8 @@
 GIT
   remote: https://github.com/pulibrary/lcsort.git
-  revision: 1981f6858a6263161d431367e7a8339ea22b1f76
+  revision: ffdf07a01704151fdaa5941a7c7d5627b0389df5
   specs:
     lcsort (0.1.3)
-
-GIT
-  remote: https://github.com/pulibrary/rspec-solr.git
-  revision: fd54471350b3a9ba08a35b6b79ef879b5df72d23
-  branch: rspec3
-  specs:
-    rspec-solr (1.0.1)
-      rspec
-      rspec-collection_matchers
 
 GIT
   remote: https://github.com/pulibrary/stringex.git
@@ -44,21 +35,24 @@ GEM
     ref (1.0.5)
     rsolr (1.0.12)
       builder (>= 2.1.2)
-    rspec (3.2.0)
-      rspec-core (~> 3.2.0)
-      rspec-expectations (~> 3.2.0)
-      rspec-mocks (~> 3.2.0)
+    rspec (3.3.0)
+      rspec-core (~> 3.3.0)
+      rspec-expectations (~> 3.3.0)
+      rspec-mocks (~> 3.3.0)
     rspec-collection_matchers (1.1.2)
       rspec-expectations (>= 2.99.0.beta1)
-    rspec-core (3.2.3)
-      rspec-support (~> 3.2.0)
-    rspec-expectations (3.2.1)
+    rspec-core (3.3.1)
+      rspec-support (~> 3.3.0)
+    rspec-expectations (3.3.0)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.2.0)
-    rspec-mocks (3.2.1)
+      rspec-support (~> 3.3.0)
+    rspec-mocks (3.3.1)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.2.0)
-    rspec-support (3.2.2)
+      rspec-support (~> 3.3.0)
+    rspec-solr (2.0.0)
+      rspec (~> 3.0)
+      rspec-collection_matchers
+    rspec-support (3.3.0)
     scrub_rb (1.0.1)
     slop (3.6.0)
     traject (2.0.2)
@@ -98,6 +92,6 @@ DEPENDENCIES
   lcsort!
   rsolr
   rspec (~> 3.2)
-  rspec-solr!
+  rspec-solr
   stringex!
   traject (= 2.0.2)
