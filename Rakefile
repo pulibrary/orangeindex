@@ -115,32 +115,33 @@ namespace :liberate do
     comp_date = ENV['SET_DATE'] ? Date.parse(ENV['SET_DATE']) : (Date.today-1)
     all_events = JSON.parse(resp.body).select {|e| Date.parse(e['start']) >= comp_date && e['success'] && e['dump_type'] == 'CHANGED_RECORDS'}.each do |event| 
       IndexFunctions::update_records(event, solr_url).each do |marc_xml|
-        sh "traject -c lib/traject_config.rb #{marc_xml} -u #{solr_url}; true"
+        sh "traject -c lib/traject_config.rb #{marc_xml}.xml -u #{solr_url}; true"
+        File.delete("#{marc_xml}.xml")
+        File.delete("#{marc_xml}.gz")
       end
       sh "curl '#{solr_url}/update/json?commit=true' --data-binary @/tmp/delete_ids.json -H 'Content-type:application/json'; true"
     end
   end
 
-  namespace :updates do
+   namespace :updates do
 
-    desc "Index VoyRec updates for given SET_DATE in development"
+    desc "Index VoyRec with all changed records since given SET_DATE in development"
     task :development do
       ENV['SET_URL'] = config['development']['url']
       Rake::Task["liberate:updates"].invoke
     end
-    desc "Index VoyRec updates for given SET_DATE in production"
+    desc "Index VoyRec with all changed records since given SET_DATE in production"
     task :production do
       ENV['SET_URL'] = config['production']['url']
       Rake::Task["liberate:updates"].invoke
     end
 
-    desc "Index VoyRec updates for given SET_DATE in test"
+    desc "Index VoyRec with all changed records since given SET_DATE in test"
     task :test do
       ENV['SET_URL'] = config['test']['url']
       Rake::Task["liberate:updates"].invoke
-    end    
+    end
   end
-
 
   desc "Index VoyRec updates on SET_DATE against SET_URL, default development"
   task :on do
@@ -148,7 +149,9 @@ namespace :liberate do
     resp = conn.get '/events.json'
     if event = JSON.parse(resp.body).detect {|e| Date.parse(e['start']) == Date.parse(ENV['SET_DATE']) && e['success'] && e['dump_type'] == 'CHANGED_RECORDS'}
       IndexFunctions::update_records(event, solr_url).each do |marc_xml|
-        sh "traject -c lib/traject_config.rb #{marc_xml} -u #{solr_url}; true"
+        sh "traject -c lib/traject_config.rb #{marc_xml}.xml -u #{solr_url}; true"
+        File.delete("#{marc_xml}.xml")
+        File.delete("#{marc_xml}.gz")
       end
       sh "curl '#{solr_url}/update/json?commit=true' --data-binary @/tmp/delete_ids.json -H 'Content-type:application/json'"
     end
@@ -171,9 +174,8 @@ namespace :liberate do
     task :test do
       ENV['SET_URL'] = config['test']['url']
       Rake::Task["liberate:on"].invoke
-    end    
+    end
   end
-  
 
   desc "Index VoyRec with today's changed records, against SET_URL"
   task :latest do
@@ -182,32 +184,13 @@ namespace :liberate do
     event = JSON.parse(resp.body).last
     if event['success'] && event['dump_type'] == 'CHANGED_RECORDS'
       IndexFunctions::update_records(event, solr_url).each do |marc_xml|
-        sh "traject -c lib/traject_config.rb #{marc_xml} -u #{solr_url}; true"
+        sh "traject -c lib/traject_config.rb #{marc_xml}.xml -u #{solr_url}; true"
+        File.delete("#{marc_xml}.xml")
+        File.delete("#{marc_xml}.gz")
       end
       sh "curl '#{solr_url}/update/json?commit=true' --data-binary @/tmp/delete_ids.json -H 'Content-type:application/json'"      
     end
   end
-
-
-   namespace :updates do
-
-    desc "Index VoyRec with all changed records in development"
-    task :development do
-      ENV['SET_URL'] = config['development']['url']
-      Rake::Task["liberate:updates"].invoke
-    end
-    desc "Index VoyRec with all changed records in production"
-    task :production do
-      ENV['SET_URL'] = config['production']['url']
-      Rake::Task["liberate:updates"].invoke
-    end
-
-    desc "Index VoyRec with all changed records in test"
-    task :test do
-      ENV['SET_URL'] = config['test']['url']
-      Rake::Task["liberate:updates"].invoke
-    end    
-  end 
 
    namespace :latest do
 
@@ -226,7 +209,39 @@ namespace :liberate do
     task :test do
       ENV['SET_URL'] = config['test']['url']
       Rake::Task["liberate:latest"].invoke
-    end    
-  end   
+    end
+  end 
 
+  desc "Index latest full record dump against SET_URL, default development"
+  task :full do
+    solr_url = ENV['SET_URL'] || config['development']['url']
+    resp = conn.get '/events.json'
+    if event = JSON.parse(resp.body).select {|e| e['success'] && e['dump_type'] == 'ALL_RECORDS'}.last
+      IndexFunctions::full_dump(event, solr_url).each do |marc_xml|
+        sh "traject -c lib/traject_config.rb #{marc_xml}.xml -u #{solr_url}; true"
+        File.delete("#{marc_xml}.xml")
+        File.delete("#{marc_xml}.gz")
+      end
+    end
+  end
+
+  namespace :full do
+
+    desc "Index latest full record dump in development"
+    task :development do
+      ENV['SET_URL'] = config['development']['url']
+      Rake::Task["liberate:full"].invoke
+    end
+    desc "Index latest full record dump in production"
+    task :production do
+      ENV['SET_URL'] = config['production']['url']
+      Rake::Task["liberate:full"].invoke
+    end
+
+    desc "Index latest full record dump in test"
+    task :test do
+      ENV['SET_URL'] = config['test']['url']
+      Rake::Task["liberate:full"].invoke
+    end
+  end
 end
