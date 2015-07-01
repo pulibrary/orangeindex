@@ -73,6 +73,37 @@ task :check_included do
   end
 end
 
+desc "Deletes given BIB from SET_URL, default development"
+task :delete_bib do
+  solr_url = ENV['SET_URL'] || config['development']['url']
+  if ENV['BIB']
+    sh "curl '#{solr_url}/update?commit=true' --data '<delete><id>#{ENV['BIB']}</id></delete>' -H 'Content-type:text/xml; charset=utf-8'"
+  else
+    puts 'Please provide a BIB argument (BIB=####)'
+  end
+end
+
+namespace :delete_bib do
+
+  desc "Deletes given BIB in development"
+  task :development do
+    ENV['SET_URL'] = config['development']['url']
+    Rake::Task["delete_bib"].invoke
+  end
+
+  desc "Deletes given BIB in production"
+  task :production do
+    ENV['SET_URL'] = config['production']['url']
+    Rake::Task["delete_bib"].invoke
+  end
+
+  desc "Deletes given BIB in test"
+  task :test do
+    ENV['SET_URL'] = config['test']['url']
+    Rake::Task["delete_bib"].invoke
+  end
+end
+
 
 namespace :liberate do
 
