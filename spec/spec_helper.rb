@@ -18,6 +18,7 @@
 require 'yaml'
 require 'rsolr'
 require 'rspec-solr'
+require 'traject'
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 
 
