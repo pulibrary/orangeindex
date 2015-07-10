@@ -62,6 +62,17 @@ task :check do
   end
 end
 
+desc "which of the BIBS given didn't index against SET_URL?"
+task :check_given do
+  if ENV['BIBS']
+    index_url = ENV['SET_URL'] || config['production']['url']
+    solr = RSolr.connect :url => index_url
+    `awk '{print}' #{ENV['BIBS']}`.split("\n").each do |bib|
+      puts bib if solr.get('get', :params => {id: "#{bib}"})["doc"].nil?
+    end
+  end
+end
+
 desc "which chunks from BIB_DUMP index against SET_URL?"
 task :check_included do
   if ENV['BIB_DUMP']
@@ -146,6 +157,7 @@ namespace :liberate do
     comp_date = ENV['SET_DATE'] ? Date.parse(ENV['SET_DATE']) : (Date.today-1)
     all_events = JSON.parse(resp.body).select {|e| Date.parse(e['start']) >= comp_date && e['success'] && e['dump_type'] == 'CHANGED_RECORDS'}.each do |event| 
       IndexFunctions::update_records(event, solr_url).each do |marc_xml|
+        IndexFunctions::unzip(marc_xml)
         sh "traject -c lib/traject_config.rb #{marc_xml}.xml -u #{solr_url}; true"
         File.delete("#{marc_xml}.xml")
         File.delete("#{marc_xml}.gz")
@@ -180,6 +192,7 @@ namespace :liberate do
     resp = conn.get '/events.json'
     if event = JSON.parse(resp.body).detect {|e| Date.parse(e['start']) == Date.parse(ENV['SET_DATE']) && e['success'] && e['dump_type'] == 'CHANGED_RECORDS'}
       IndexFunctions::update_records(event, solr_url).each do |marc_xml|
+        IndexFunctions::unzip(marc_xml)
         sh "traject -c lib/traject_config.rb #{marc_xml}.xml -u #{solr_url}; true"
         File.delete("#{marc_xml}.xml")
         File.delete("#{marc_xml}.gz")
@@ -215,6 +228,7 @@ namespace :liberate do
     event = JSON.parse(resp.body).last
     if event['success'] && event['dump_type'] == 'CHANGED_RECORDS'
       IndexFunctions::update_records(event, solr_url).each do |marc_xml|
+        IndexFunctions::unzip(marc_xml)
         sh "traject -c lib/traject_config.rb #{marc_xml}.xml -u #{solr_url}; true"
         File.delete("#{marc_xml}.xml")
         File.delete("#{marc_xml}.gz")
@@ -249,6 +263,7 @@ namespace :liberate do
     resp = conn.get '/events.json'
     if event = JSON.parse(resp.body).select {|e| e['success'] && e['dump_type'] == 'ALL_RECORDS'}.last
       IndexFunctions::full_dump(event, solr_url).each do |marc_xml|
+        IndexFunctions::unzip(marc_xml)
         sh "traject -c lib/traject_config.rb #{marc_xml}.xml -u #{solr_url}; true"
         File.delete("#{marc_xml}.xml")
         File.delete("#{marc_xml}.gz")
