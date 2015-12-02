@@ -17,7 +17,6 @@ GEM
       multipart-post (>= 1.2, < 3)
     hashie (3.4.3)
     httpclient (2.7.0.1)
-    isbn (2.0.10)
     library_stdnums (1.4.1)
     marc (1.0.0)
       scrub_rb (>= 1.0.1, < 2)
@@ -83,10 +82,12 @@ PLATFORMS
 
 DEPENDENCIES
   faraday
-  isbn
   library_stdnums
   rsolr
   rspec (~> 3.2)
   rspec-solr
   stringex!
   traject (~> 2.0)
+
+BUNDLED WITH
+   1.10.6

@@ -1,5 +1,5 @@
 source 'https://rubygems.org'
-ruby '1.9.3', :engine => 'jruby', :engine_version => '1.7.19'
+ruby '2.2.2', :engine => 'jruby', :engine_version => '9.0.4.0'
 
 # Traject Marc to Solr
 gem 'traject', '~> 2.0'
@@ -11,8 +11,6 @@ gem 'rspec-solr'
 gem 'rsolr'
 
 gem 'faraday'
-
-gem 'isbn'
 
 gem 'library_stdnums'
 
